@@ -1,6 +1,8 @@
 # flake-input-patcher
 
-Utility to patch flake inputs.
+Tired of waiting for PRs to land? Stop waiting!
+
+Utility to patch [nix](https://nixos.org/) flake inputs.
 
 This can go away when nix supports patching flake inputs:
 <https://github.com/NixOS/nix/issues/3920>.
@@ -11,7 +13,10 @@ Usage in a `flake.nix`:
 
 ```nix
 {
-  inputs.flake-input-patcher.url = "github:jfly/flake-input-patcher";
+  inputs = {
+    flake-input-patcher.url = "github:jfly/flake-input-patcher";
+    # ... More inputs here ...
+  };
 
   outputs =
     unpatchedInputs:
@@ -32,11 +37,11 @@ Usage in a `flake.nix`:
 
         # Patching a transitive dependency:
         clan-core.inputs.data-mesher.patches = [
-           # ... more patches here ...
+           # ... More patches here ...
         ];
       };
     in
-    ...
+    # Define your flake as normal using `inputs`!
 }
 ```
 
@@ -46,6 +51,17 @@ Usage in a `flake.nix`:
   end up in inconsistent states. For example, if you patch your top level
   `nixpkgs`, that doesn't affect transitive dependencies that follow that
   `nixpkgs`. Ideally we'd parse `flake.nix` and honor the follows.
-- This relies upon system-specific utilities in nixpkgs (`fetchpatch` and
-  `applyPatches`), which means you have to hardcode a system to make it work.
-- This depends on IFD.
+- `nix` does not (yet) have a patch builtin, so we use
+  system-specific utilities in nixpkgs (`fetchpatch` and `applyPatches`), which
+  means you have to hardcode a system to make it work.
+- This depends on [Input From Derivation (IFD)](https://nix.dev/manual/nix/latest/language/import-from-derivation).
+
+## Alternatives
+
+- Be more patient and wait for PRs to land.
+- Tediously hand-write overlays/overrides for changes you need/want.
+  This won't help with NixOS module changes.
+- Maintain your own forks of your inputs.
+  - [nix-patcher](https://github.com/katrinafyi/nix-patcher) is designed to
+    automate this process. It looks like it only works for inputs hosted on
+    GitHub.
