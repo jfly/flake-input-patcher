@@ -65,3 +65,9 @@ Usage in a `flake.nix`:
   - [nix-patcher](https://github.com/katrinafyi/nix-patcher) is designed to
     automate this process. It looks like it only works for inputs hosted on
     GitHub.
+
+## In the wild
+
+Feel free to add a link to your repo here!
+
+- [jfly/snow](https://github.com/jfly/snow/blob/main/flake.nix)
