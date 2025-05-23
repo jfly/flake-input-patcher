@@ -1,0 +1,7 @@
+diff --git a/new-file-from-patch.md b/new-file-from-patch.md
+new file mode 100644
+index 0000000..d81cc07
+--- /dev/null
++++ b/new-file-from-patch.md
+@@ -0,0 +1 @@
++patched this new file into existence!

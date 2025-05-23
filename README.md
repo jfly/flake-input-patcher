@@ -62,7 +62,7 @@ Usage in a `flake.nix`:
 - Tediously hand-write overlays/overrides for changes you need/want.
   This won't help with NixOS module changes.
 - Maintain your own forks of your inputs.
-  - [nix-patcher](https://github.com/katrinafyi/nix-patcher) is designed to
+  - [`nix-patcher`](https://github.com/katrinafyi/nix-patcher) is designed to
     automate this process. It looks like it only works for inputs hosted on
     GitHub.
 
@@ -70,4 +70,4 @@ Usage in a `flake.nix`:
 
 Feel free to add a link to your repo here!
 
-- [jfly/snow](https://github.com/jfly/snow/blob/main/flake.nix)
+- [`jfly/snow`](https://github.com/jfly/snow/blob/main/flake.nix)

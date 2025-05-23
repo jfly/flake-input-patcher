@@ -1,0 +1,6 @@
+diff --git a/default.nix b/default.nix
+--- a/default.nix
++++ b/default.nix
+@@ -1 +1 @@
+-[ "x86_64-linux" ]
++"you've been patched!"

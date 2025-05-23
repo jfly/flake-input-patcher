@@ -1,0 +1,6 @@
+diff --git a/value.nix b/value.nix
+--- a/value.nix
++++ b/value.nix
+@@ -1 +1 @@
+-42
++"you've been patched!"

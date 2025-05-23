@@ -11,16 +11,21 @@
     let
       systems = import inputs.systems;
       inherit (inputs.nixpkgs) lib;
+      eachSystem =
+        cb:
+        lib.listToAttrs (
+          map (
+            system:
+            let
+              pkgs = inputs.nixpkgs.legacyPackages.${system};
+              value = cb { inherit pkgs; };
+            in
+            lib.nameValuePair system value
+          ) systems
+        );
     in
     {
-      lib = lib.listToAttrs (
-        map (
-          system:
-          let
-            pkgs = inputs.nixpkgs.legacyPackages.${system};
-          in
-          lib.nameValuePair system (pkgs.callPackage ./lib.nix { })
-        ) systems
-      );
+      formatter = eachSystem ({ pkgs, ... }: pkgs.nixfmt-tree);
+      lib = eachSystem ({ pkgs, ... }: pkgs.callPackage ./lib.nix { });
     };
 }
