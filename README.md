@@ -50,7 +50,7 @@ Usage in a `flake.nix`:
 - We currently don't understand anything about input following, so you can
   end up in inconsistent states. For example, if you patch your top level
   `nixpkgs`, that doesn't affect transitive dependencies that follow that
-  `nixpkgs`. Ideally we'd parse `flake.nix` and honor the follows.
+  `nixpkgs`. Ideally we'd import `flake.nix` and honor the follows.
 - `nix` does not (yet) have a patch builtin, so we use
   system-specific utilities in nixpkgs (`fetchpatch` and `applyPatches`), which
   means you have to hardcode a system to make it work.
