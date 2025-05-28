@@ -58,7 +58,8 @@ Usage in a `flake.nix`:
 
 ## Alternatives
 
-- Be more patient and wait for PRs to land.
+- Be more patient and wait for PRs to land. [You are trying to upstream your
+  patches, aren't you?](https://www.reddit.com/r/nixmasterrace/comments/1kqzezc/me_my_nixpkgs_patches/)
 - Tediously hand-write overlays/overrides for changes you need/want.
   This won't help with NixOS module changes.
 - Maintain your own forks of your inputs.
