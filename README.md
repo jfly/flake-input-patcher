@@ -66,6 +66,9 @@ Usage in a `flake.nix`:
   - [`nix-patcher`](https://github.com/katrinafyi/nix-patcher) is designed to
     automate this process. It looks like it only works for inputs hosted on
     GitHub.
+- [gepbird/nixpkgs-patcher](https://github.com/gepbird/nixpkgs-patcher)
+  implements a similar IFD helper. Also see [this feature comparison
+  table](https://github.com/gepbird/nixpkgs-patcher?tab=readme-ov-file#comparison-with-alternatives)
 
 ## In the wild
 
