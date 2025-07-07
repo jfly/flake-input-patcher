@@ -12,6 +12,7 @@
     }:
     {
       value = import ./value.nix;
+      set = import ./set.nix;
       directAccessSystem = import systems;
       indirectAccessSystem = import self.inputs.systems;
       subdirFlakeReadme = builtins.readFile "${subdirFlake}/new-file-from-patch.md";

@@ -96,8 +96,10 @@ in
     unpatchedInputs: patchSpecByInputName:
     let
       patchedInputs = patchInputs {
-        unpatchedInputs = lib.recursiveUpdate unpatchedInputs {
-          self.inputs = patchedInputs;
+        unpatchedInputs = unpatchedInputs // {
+          self = unpatchedInputs.self // {
+            inputs = patchedInputs;
+          };
         };
         inherit patchSpecByInputName;
       };

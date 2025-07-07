@@ -12,7 +12,7 @@
     unpatchedInputs:
     let
       # Unfortunately, this utility requires hardcoding a single system. See
-      # "Known issues" in ../README.md.
+      # "Known issues" in `../README.md`.
       system = "x86_64-linux";
 
       patcher = unpatchedInputs.flake-input-patcher.lib.${system};
@@ -21,6 +21,7 @@
         # Patching a direct dependency:
         dep1.patches = [
           ./dep1-int-to-str.patch
+          ./dep1-change-attrset.patch
         ];
 
         # Patching an indirect dependency:
@@ -41,6 +42,13 @@
         testDirectDependency = {
           expr = inputs.dep1.value;
           expected = "you've been patched!";
+        };
+
+        testDirectDependencyThroughSelf = {
+          expr = inputs.self.inputs.dep1.set;
+          expected = {
+            new = "new";
+          };
         };
 
         testTransitiveDependencyDirectAccess = {
