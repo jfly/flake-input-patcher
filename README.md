@@ -75,3 +75,5 @@ Usage in a `flake.nix`:
 Feel free to add a link to your repo here!
 
 - [`jfly/snow`](https://github.com/jfly/snow/blob/main/flake.nix)
+- [`opdavies/nix-sculpin-template`](https://git.oliverdavies.uk/opdavies/nix-sculpin-template/src/commit/1443632dab9d5110ee0a58f7d0f80b4ac18667e0/flake.nix)
+- [`opdavies/oliverdavies.uk`](https://git.oliverdavies.uk/opdavies/oliverdavies.uk/src/commit/ab55cf2020b4f3f8f333d12c5832335f83e65cc3/flake.nix)
