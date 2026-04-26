@@ -93,16 +93,20 @@ in
 {
   inherit fetchpatch;
   patch =
-    unpatchedInputs: patchSpecByInputName:
+    unpatchedInputsWithSelf: patchSpecByInputName:
     let
+      self = unpatchedInputsWithSelf.self;
+      unpatchedInputs = lib.removeAttrs unpatchedInputsWithSelf [ "self" ];
+
       patchedInputs = patchInputs {
-        unpatchedInputs = unpatchedInputs // {
-          self = unpatchedInputs.self // {
-            inputs = patchedInputs;
-          };
-        };
+        inherit unpatchedInputs;
         inherit patchSpecByInputName;
       };
+      patchedInputsWithSelf = patchedInputs // {
+        self = self // {
+          inputs = patchedInputs;
+        };
+      };
     in
-    patchedInputs;
+    patchedInputsWithSelf;
 }
