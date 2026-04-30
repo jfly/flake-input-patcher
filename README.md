@@ -15,6 +15,11 @@ Usage in a `flake.nix`:
 {
   inputs = {
     flake-input-patcher.url = "github:jfly/flake-input-patcher";
+
+    # Feel free to use `follows`. If it points at a patched input, the right
+    # thing will happen!
+    systems.follows = "dep1/systems";
+
     # ... More inputs here ...
   };
 

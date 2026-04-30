@@ -1,5 +1,22 @@
 {
   "nodes": {
+    "dep1": {
+      "inputs": {
+        "subdirFlake": "subdirFlake",
+        "systems": [
+          "systems"
+        ]
+      },
+      "locked": {
+        "path": "../dep1",
+        "type": "path"
+      },
+      "original": {
+        "path": "../dep1",
+        "type": "path"
+      },
+      "parent": []
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1738142207,
@@ -18,7 +35,7 @@
     },
     "root": {
       "inputs": {
-        "subdirFlake": "subdirFlake",
+        "dep1": "dep1",
         "systems": "systems_2"
       }
     },
@@ -60,16 +77,16 @@
     },
     "systems_2": {
       "locked": {
-        "lastModified": 1680978846,
-        "narHash": "sha256-Gtqg8b/v49BFDpDetjclCYXm8mAnTrUzR0JnE2nv5aw=",
+        "lastModified": 1680978097,
+        "narHash": "sha256-1Zp7TRYLXj4P5FLhQ8jBChrgAmQxR3iTypmWf9EFTnc=",
         "owner": "nix-systems",
-        "repo": "x86_64-linux",
-        "rev": "2ecfcac5e15790ba6ce360ceccddb15ad16d08a8",
+        "repo": "aarch64-linux",
+        "rev": "aa1ce1b64c822dff925d63d3e771113f71ada1bb",
         "type": "github"
       },
       "original": {
         "owner": "nix-systems",
-        "repo": "x86_64-linux",
+        "repo": "aarch64-linux",
         "type": "github"
       }
     }
