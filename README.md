@@ -15,6 +15,11 @@ Usage in a `flake.nix`:
 {
   inputs = {
     flake-input-patcher.url = "github:jfly/flake-input-patcher";
+
+    # Feel free to use `follows`. If it points at a patched input, the right
+    # thing will happen!
+    systems.follows = "dep1/systems";
+
     # ... More inputs here ...
   };
 
@@ -25,20 +30,24 @@ Usage in a `flake.nix`:
       # "Known issues" below.
       patcher = unpatchedInputs.flake-input-patcher.lib.x86_64-linux;
 
-      inputs = patcher.patch unpatchedInputs {
-        # Patching a direct dependency:
-        nixpkgs.patches = [
-          (patcher.fetchpatch {
-            name = "k3s: use patched util-linuxMinimal";
-            url = "https://github.com/NixOS/nixpkgs/pull/407810.diff";
-            hash = "sha256-N8tzwSZB9d4Htvimy00+Jcw8TKRCeV8PJWp80x+VtSk=";
-          })
-        ];
+      inputs = patcher.patch {
+        inherit unpatchedInputs;
+        flakePath = ./.;
+        patchSpec = {
+            # Patching a direct dependency:
+            nixpkgs.patches = [
+              (patcher.fetchpatch {
+                name = "k3s: use patched util-linuxMinimal";
+                url = "https://github.com/NixOS/nixpkgs/pull/407810.diff";
+                hash = "sha256-N8tzwSZB9d4Htvimy00+Jcw8TKRCeV8PJWp80x+VtSk=";
+              })
+            ];
 
-        # Patching a transitive dependency:
-        clan-core.inputs.data-mesher.patches = [
-           # ... More patches here ...
-        ];
+            # Patching a transitive dependency:
+            clan-core.inputs.data-mesher.patches = [
+               # ... More patches here ...
+            ];
+        };
       };
     in
     # Define your flake as normal using `inputs`!
@@ -47,14 +56,17 @@ Usage in a `flake.nix`:
 
 ## Known issues
 
-- We currently don't understand anything about input following, so you can
-  end up in inconsistent states. For example, if you patch your top level
-  `nixpkgs`, that doesn't affect transitive dependencies that follow that
-  `nixpkgs`. Ideally we'd import `flake.nix` and honor the follows.
 - `nix` does not (yet) have a patch builtin, so we use
   system-specific utilities in nixpkgs (`fetchpatch` and `applyPatches`), which
   means you have to hardcode a system to make it work.
 - This depends on [Input From Derivation (IFD)](https://nix.dev/manual/nix/latest/language/import-from-derivation).
+- Support for input following depends on parsing your flake's `flake.lock`
+  file. I'm not sure how brittle this approach is. See branch
+  `follows-without-lockfile-abandoned` for an alternate approach that does not
+  depend on the lockfile. I abandoned this approach before I got it completely
+  working, but I think it is a viable approach, it just is much more work than
+  leveraging the lockfile (which implicitly captures information about how
+  `inputs` directives are resolved across multiple flakes).
 
 ## Alternatives
 

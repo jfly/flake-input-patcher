@@ -1,112 +1,145 @@
 {
   lib,
   fetchpatch,
-  applyPatches,
+  callPackage,
   ...
 }:
 
 let
-  # This logic is largely copied from nix itself, see
-  # <https://github.com/NixOS/nix/blob/2.29.0/src/libflake/call-flake.nix>.
-  # We can't use `builtins.getFlake` for two reasons:
-  #  1. Nix treats this as an "unlocked" flake reference and errors out in pure
-  #     mode. I suspect this is a bug, perhaps one that only arises when doing
-  #     IFD like we're doing here.
-  #  2. We need to load the flake with the given (possibly patched) inputs.
-  importFlake =
-    { src, inputs }:
+  callFlake = callPackage ./call-flake.nix { };
+
+  # Given a flake's unpatched inputs, lockFile, and a patchSpec, produce
+  # `overrides` suitable for our callFlake function.
+  # `overrides` is a mapping of node name (as found in the lockFile) to
+  # `{ sourceInfo, patches ? [] }`.
+  buildOverrides =
+    {
+      lockFile,
+      unpatchedInputs,
+      rootPatchSpec,
+    }:
     let
-      flake = import (src + "/flake.nix");
-      outPath = toString src;
-
-      # I'm not sure what to do with `sourceInfo`. It normally comes from the
-      # lockfile [0]. Copying the old value feels wrong.
-      # I'm going to opt to leave it unset until something goes wrong.
-      #
-      # [0]: https://github.com/NixOS/nix/blob/2.29.0/src/libflake/call-flake.nix#L52-L63
-      sourceInfo = {
-        inherit outPath;
-      };
-
-      outputs = flake.outputs (inputs // { self = result; });
-
-      result =
-        outputs
-        // sourceInfo
-        // {
-          inherit inputs;
-          inherit outputs;
-          inherit sourceInfo;
-          _type = "flake";
+      buildInputInfoByNodeName =
+        {
+          nodeName,
+          unpatchedInput,
+          patchSpec,
+        }:
+        let
+          node = lockFile.nodes.${nodeName};
+          nonFollowsInputs = lib.filterAttrs (
+            inputName: nodeNameOrFollows:
+            # Follows are lists of strings (such as ["dep1" "systems"]). We're
+            # only interested in named nodes (strings).
+            builtins.typeOf nodeNameOrFollows == "string"
+          ) (node.inputs or { });
+        in
+        lib.mergeAttrsList (
+          [
+            {
+              ${nodeName} = {
+                input = unpatchedInput;
+                patches = patchSpec.patches or [ ];
+              };
+            }
+          ]
+          ++ (lib.mapAttrsToList (
+            inputName: nodeName:
+            buildInputInfoByNodeName {
+              inherit nodeName;
+              unpatchedInput = unpatchedInput.inputs.${inputName};
+              patchSpec = patchSpec.inputs.${inputName} or { };
+            }
+          ) nonFollowsInputs)
+        );
+      inputInfoByNodeName = buildInputInfoByNodeName {
+        nodeName = lockFile.root;
+        unpatchedInput = {
+          inputs = unpatchedInputs;
         };
+        patchSpec = {
+          inputs = rootPatchSpec;
+        };
+      };
     in
-    result;
+    lib.mapAttrs (
+      nodeName: node:
+      let
+        inputInfo = inputInfoByNodeName.${nodeName};
+        inherit (inputInfo) input patches;
+      in
+      {
+        inherit patches;
+      }
+      # Note: the root node does not have `sourceInfo` nor `outPath`. That's fine, we're
+      # never going to apply patches to it (you can just edit your flake!).
+      // lib.getAttrs [ "sourceInfo" "outPath" ] input
+    ) lockFile.nodes;
 
-  patchInputs =
+  patchV1 = (callPackage ./lib-deprecated.nix { }).patch;
+  patchV2 =
     {
       unpatchedInputs,
-      patchSpecByInputName,
-    }:
-    lib.mapAttrs (
-      name: unpatchedInput:
-      patchInput {
-        inherit name;
-        inherit unpatchedInput;
-        patchSpec = patchSpecByInputName.${name} or { };
-      }
-    ) unpatchedInputs;
-
-  patchInput =
-    {
-      name,
-      unpatchedInput,
       patchSpec,
+      flakePath,
     }:
     let
-      patchSpecByInputName = patchSpec.inputs or { };
-      patches = patchSpec.patches or [ ];
+      inherit (unpatchedInputs) self;
 
-      patchedInputs = patchInputs {
-        unpatchedInputs = unpatchedInput.inputs;
-        patchSpecByInputName = patchSpecByInputName;
+      lockFile = builtins.fromJSON (builtins.readFile "${flakePath}/flake.lock");
+
+      overrides = buildOverrides {
+        inherit unpatchedInputs lockFile;
+        rootPatchSpec = patchSpec;
       };
-
-      patchedSrc =
-        if patches == [ ] then
-          unpatchedInput
-        else
-          applyPatches {
-            name = "${name}-patched";
-            patches = patches;
-            src = unpatchedInput;
-          };
+      patchedInputs = (callFlake lockFile overrides).inputs;
     in
-    if patchSpecByInputName == { } && patches == [ ] then
-      unpatchedInput
-    else
-      importFlake {
-        src = patchedSrc;
+    patchedInputs
+    // {
+      self = self // {
         inputs = patchedInputs;
       };
-in
+    };
 
+  equalIgnoreOrder = l1: l2: lib.sort lib.lessThan l1 == lib.sort lib.lessThan l2;
+in
 {
   inherit fetchpatch;
   patch =
-    unpatchedInputsWithSelf: patchSpecByInputName:
-    let
-      self = unpatchedInputsWithSelf.self;
-      unpatchedInputs = lib.removeAttrs unpatchedInputsWithSelf [ "self" ];
+    arg:
+    if
+      equalIgnoreOrder (builtins.attrNames arg) [
+        "unpatchedInputs"
+        "patchSpec"
+        "flakePath"
+      ]
+    then
+      patchV2 arg
+    else
+      lib.warn ''
+        You are using the deprecated form of flake-input-patcher's `patch` which does not
+        support inputs follows.
 
-      patchedInputs = patchInputs {
-        inherit unpatchedInputs;
-        inherit patchSpecByInputName;
-      };
-      patchedInputsWithSelf = patchedInputs // {
-        self = self // {
-          inputs = patchedInputs;
-        };
-      };
-    in
-    patchedInputsWithSelf;
+        This will be dropped in favor of the new form, which takes exactly 1 argument:
+
+          patcher.patch {
+            inherit unpatchedInputs;
+            flakePath = ./.;
+            patchSpec = {
+              # Patching a direct dependency:
+              nixpkgs.patches = [
+                (patcher.fetchpatch {
+                  name = "k3s: use patched util-linuxMinimal";
+                  url = "https://github.com/NixOS/nixpkgs/pull/407810.diff";
+                  hash = "sha256-N8tzwSZB9d4Htvimy00+Jcw8TKRCeV8PJWp80x+VtSk=";
+                })
+              ];
+
+              # Patching a transitive dependency:
+              clan-core.inputs.data-mesher.patches = [
+                 # ... More patches here ...
+              ];
+            };
+          };
+      '' (patchV1 arg);
 }

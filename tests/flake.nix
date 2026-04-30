@@ -5,7 +5,22 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
     flake-input-patcher.url = "path:../.";
+
     dep1.url = "path:./dep1";
+
+    dep1-wrapper = {
+      url = "path:./dep1-wrapper";
+      inputs.dep1.inputs.systems.follows = "systems";
+    };
+
+    dep1-wrapper-alt.url = "path:./dep1-wrapper";
+
+    dep1-wrapper-alt2 = {
+      url = "path:./dep1-wrapper";
+      inputs.dep1.inputs.systems.url = "github:nix-systems/riscv64-linux";
+    };
+
+    systems.follows = "dep1/systems";
   };
 
   outputs =
@@ -17,7 +32,36 @@
 
       patcher = unpatchedInputs.flake-input-patcher.lib.${system};
 
-      inputs = patcher.patch unpatchedInputs {
+      inputs = patcher.patch {
+        inherit unpatchedInputs;
+        flakePath = ./.;
+        patchSpec = {
+          # Patching a direct dependency:
+          dep1.patches = [
+            ./dep1-int-to-str.patch
+            ./dep1-change-attrset.patch
+          ];
+
+          # Patching an indirect dependency:
+          dep1.inputs.systems.patches = [
+            ./systems.patch
+          ];
+
+          # Patching an indirect dependency that is a subdir flake:
+          dep1.inputs.subdirFlake.patches = [
+            ./new-file.patch
+          ];
+
+          # Patching an indirect dependency that is used as a follows in a deeper flake:
+          dep1-wrapper-alt.inputs.systems.patches = [
+            ./systems-alt.patch
+          ];
+        };
+      };
+
+      # Testing the deprecated ("v1") patch function which has a different API
+      # (unfortunately) and doesn't support inputs follows.
+      deprecatedPatchedInputs = patcher.patch unpatchedInputs {
         # Patching a direct dependency:
         dep1.patches = [
           ./dep1-int-to-str.patch
@@ -37,7 +81,11 @@
 
       inherit (inputs.nixpkgs) lib;
     in
-    {
+    # `lib.id` might look silly here, but it's actually an interesting
+    # test. It confirms that we can reference patched inputs before
+    # returning anything from the `outputs` function. (It's easy to
+    # trigger infinite recursion depending on what we do with `self`.)
+    lib.id {
       tests = {
         testDirectDependency = {
           expr = inputs.dep1.value;
@@ -80,7 +128,49 @@
           expr = inputs.self.inputs ? self;
           expected = false;
         };
+
+        # `systems` follows `dep1/systems`, which has been
+        # patched.
+        testFollowsPatchedSystems = {
+          expr = import inputs.systems;
+          expected = "you've been patched!";
+        };
+
+        # `dep1-wrapper` has its `dep1`'s system input set to follow
+        # `systems`, which follows `dep1/systems`, which has been patched.
+        testInputFollowsPatchedSystems = {
+          expr = inputs.dep1-wrapper.systemFromDep1;
+          expected = "you've been patched!";
+        };
+
+        # `dep1-wrapper-alt` has its own `system` input, which is patched in a
+        # unique way. Furthermore, it overrides its own `dep1.inputs.system` to
+        # follow this patched `system` input.
+        testDependencyInputFollowsPatchedSystem = {
+          expr = inputs.dep1-wrapper-alt.systemFromDep1;
+          expected = "you've been patched in a different way!";
+        };
+
+        # dep1-wrapper sets `inputs.dep1.inputs.systems.follows`. However, *we*
+        # set `[...].systems.url = "github:nix-systems/riscv64-linux";`, which
+        # should take priority.
+        testHigherUrlDefeatsLowerFollows = {
+          expr = inputs.dep1-wrapper-alt2.systemFromDep1;
+          expected = [ "riscv64-linux" ];
+        };
+
+        ### Begin tests of deprecated "v1" implementation. ###
+        testV1DirectDependency = {
+          expr = deprecatedPatchedInputs.dep1.value;
+          expected = "you've been patched!";
+        };
+        testV1InputsDoNotIncludeSelf = {
+          expr = deprecatedPatchedInputs.self.inputs ? self;
+          expected = false;
+        };
+        ### End tests of deprecated "v1" implementation. ###
       };
+
       failedTests = lib.debug.runTests inputs.self.tests;
     };
 }
