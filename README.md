@@ -34,19 +34,19 @@ Usage in a `flake.nix`:
         inherit unpatchedInputs;
         flakePath = ./.;
         patchSpec = {
-            # Patching a direct dependency:
-            nixpkgs.patches = [
-              (patcher.fetchpatch {
-                name = "k3s: use patched util-linuxMinimal";
-                url = "https://github.com/NixOS/nixpkgs/pull/407810.diff";
-                hash = "sha256-N8tzwSZB9d4Htvimy00+Jcw8TKRCeV8PJWp80x+VtSk=";
-              })
-            ];
+          # Patching a direct dependency:
+          nixpkgs.patches = [
+            (patcher.fetchpatch {
+              name = "k3s: use patched util-linuxMinimal";
+              url = "https://github.com/NixOS/nixpkgs/pull/407810.diff";
+              hash = "sha256-N8tzwSZB9d4Htvimy00+Jcw8TKRCeV8PJWp80x+VtSk=";
+            })
+          ];
 
-            # Patching a transitive dependency:
-            clan-core.inputs.data-mesher.patches = [
-               # ... More patches here ...
-            ];
+          # Patching a transitive dependency:
+          clan-core.inputs.data-mesher.patches = [
+             # ... More patches here ...
+          ];
         };
       };
     in
