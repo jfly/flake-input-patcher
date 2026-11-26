@@ -86,7 +86,7 @@ let
     let
       inherit (unpatchedInputs) self;
 
-      lockFile = builtins.fromJSON (builtins.readFile "${flakePath}/flake.lock");
+      lockFile = builtins.fromJSON (builtins.readFile (flakePath + "/flake.lock"));
 
       overrides = buildOverrides {
         inherit unpatchedInputs lockFile;
